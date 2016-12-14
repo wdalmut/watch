@@ -1,0 +1,25 @@
+{
+  "name": "inode-watch",
+  "version": "0.0.1",
+  "description": "watch filesystem and give a better file events information (like move operation)",
+  "main": "index.js",
+  "scripts": {
+    "test": "jasmine"
+  },
+  "keywords": [
+    "watch",
+    "fs"
+  ],
+  "author": "Walter Dal Mut <walter.dalmut@gmail.com>",
+  "license": "MIT",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/wdalmut/watch.git"
+  },
+  "devDependencies": {
+    "jasmine": "^2.5.2"
+  },
+  "dependencies": {
+    "walk": "^2.3.9"
+  }
+}
