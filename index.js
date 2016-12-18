@@ -39,10 +39,6 @@ Watch.prototype._watchFromQueue = function() {
 
   var that = this;
   this.events.forEach(function(event) {
-
-    if (!fs.existsSync(event.filename)) {
-    }
-
     var file = that.filesystem.find(byName(event.filename));
     var fileStat = (file) ? file.stat: null;
     var fileExists = fs.existsSync(event.filename);
