@@ -143,8 +143,13 @@ Watch.prototype.watch = function(watchPath) {
 };
 
 Watch.prototype.close = function() {
-  this.watcher.close();
-  clearInterval(this.eventWatcherId);
+  if (this.eventWatcherId) {
+    clearInterval(this.eventWatcherId);
+  }
+
+  if (this.watcher) {
+    this.watcher.close();
+  }
 };
 
 module.exports = Watch;
