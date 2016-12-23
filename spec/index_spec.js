@@ -19,7 +19,7 @@ describe("watch", function() {
     });
 
     it("should emit the create signal", function(done) {
-      watch({every: 1000}).on("create", function(file) {
+      watch({every: 200}).on("create", function(file) {
         expect(file.filename).toEqual(__dirname + "/fixtures/b/test.txt");
         this.close();
         done();
@@ -36,7 +36,7 @@ describe("watch", function() {
     });
 
     it("should emit the move signal", function(done) {
-      watch({every: 1000}).on("create", function(file) {
+      watch({every: 200}).on("create", function(file) {
         fail();
       }).on("move", function(file) {
         expect(file.filename).toEqual(__dirname + "/fixtures/b/test.txt");
@@ -56,7 +56,7 @@ describe("watch", function() {
     });
 
     it("should emit the move signal", function(done) {
-      watch({every: 1000}).on("create", function(file) {
+      watch({every: 200}).on("create", function(file) {
         fail();
       }).on("delete", function(file) {
         expect(file.filename).toEqual(__dirname + "/fixtures/b/test.txt");
@@ -74,8 +74,27 @@ describe("watch", function() {
       require('child_process').execSync("touch "+__dirname+"/fixtures/b/test.txt");
     });
 
-    it("should emit the move signal", function(done) {
-      watch({every: 1000}).on("create", function(file) {
+    it("should emit the change signal", function(done) {
+      watch({every: 200}).on("create", function(file) {
+        fail();
+      }).on("change", function(file) {
+        expect(file.filename).toEqual(__dirname + "/fixtures/b/test.txt");
+        this.close();
+        done();
+      }).on("delete", fail).on("move", fail).on("create", fail).on("start", function() {
+        var a = require('child_process').execSync("echo w > "+__dirname+"/fixtures/b/test.txt");
+      }).watch(__dirname + "/fixtures/b");
+    });
+  });
+
+  describe("excludes", () => {
+    beforeEach(function() {
+      require('child_process').execSync("rm -rf "+__dirname+"/fixtures/b/*");
+      require('child_process').execSync("touch "+__dirname+"/fixtures/b/test.txt");
+    });
+
+    it("should emit a signal on missing excludes", function(done) {
+      watch({every: 200, excludes: [/\.exe$/]}).on("create", function(file) {
         fail();
       }).on("change", function(file) {
         expect(file.filename).toEqual(__dirname + "/fixtures/b/test.txt");
@@ -84,6 +103,20 @@ describe("watch", function() {
       }).on("delete", fail).on("move", fail).on("create", fail).on("start", function() {
         var a = require('child_process').execSync("echo w > "+__dirname+"/fixtures/b/test.txt "+__dirname+"/fixtures/b/test.txt");
       }).watch(__dirname + "/fixtures/b");
+    });
+
+
+    it("should skip and EXE file", function(done) {
+      watch({every: 200, excludes: [/\.exe$/]})
+        .on("delete", fail)
+        .on("move", fail)
+        .on("create", fail)
+        .on("change", fail)
+        .on("start", function() {
+          var a = require('child_process').execSync("echo w > "+__dirname+"/fixtures/b/test.exe");
+          setTimeout(done, 350);
+        }).watch(__dirname + "/fixtures/b");
+
     });
   });
 });

@@ -14,7 +14,7 @@ var Watch = function(options) {
     return new Watch(options);
   }
 
-  this.options = Object.assign({}, {exclude: [], recursive: true, followLinks: false, every: 20000}, options);
+  this.options = Object.assign({}, {excludes: [], recursive: true, followLinks: false, every: 20000}, options);
   this.filesystem = [];
   this.events = [];
   this.eventWatcherId = null;
@@ -128,12 +128,20 @@ Watch.prototype.watch = function(watchPath) {
   walker.on('end', function() {
     that.eventWatcherId = setInterval(that._watchFromQueue.bind(that), that.options.every);
 
+    var mustExclude = function(filename) {
+      return function(regex) {
+        return regex.test(filename);
+      };
+    };
+
     that.watcher = fs.watch(watchPath, {recursive: that.options.recursive}, function(eventType, filename) {
-      that.events.push({
-        type: eventType,
-        filename: path.join(watchPath, filename),
-        on: new Date().getTime(),
-      });
+      if (!that.options.excludes.map(mustExclude(path.join(watchPath, filename))).reduce((memo,item) => memo || item, false)) {
+        that.events.push({
+          type: eventType,
+          filename: path.join(watchPath, filename),
+          on: new Date().getTime(),
+        });
+      }
     });
 
     that.emit("start", watchPath);

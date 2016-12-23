@@ -26,6 +26,22 @@ of event that is fired (create/update/move/delete)
 
 The library start watching the filesystem after the `start` event
 
+## Excludes
+
+You can exclude different paths and files (or extensions) using regular
+expressions
+
+```js
+w({every: 500, excludes: [/\.exe$/,/\.bat$/,/\.com$/]})
+  .on("start", console.log)
+  .on("create", (op) => console.log("create", op))
+  .on("move", (op) => console.log("move", op))
+  .on("delete", (op) => console.log("delete", op))
+  .on("change", (op) => console.log("change", op))
+  .watch(__dirname)
+;
+```
+
 ## Why
 
 Seems that all other projects looks for changes but not detect the **move
