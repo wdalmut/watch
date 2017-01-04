@@ -14,7 +14,7 @@ var Watch = function(options) {
     return new Watch(options);
   }
 
-  this.options = Object.assign({}, {excludes: [], recursive: true, followLinks: false, every: 20000}, options);
+  this.options = Object.assign({}, {excludes: [], recursive: true, followLinks: false, every: 500}, options);
   this.filesystem = [];
   this.events = [];
   this.eventWatcherId = null;
@@ -24,6 +24,8 @@ var Watch = function(options) {
 util.inherits(Watch, EventEmitter);
 
 Watch.prototype._watchFromQueue = function() {
+  this.eventWatcherId = null;
+
   var operations = {};
 
   var byName = function(filename) {
@@ -109,6 +111,7 @@ Watch.prototype._watchFromQueue = function() {
   });
 
   that.operations = {};
+  that.eventWatcherId = setTimeout(that._watchFromQueue.bind(that), that.options.every);
 };
 
 Watch.prototype.watch = function(watchPath) {
@@ -126,7 +129,7 @@ Watch.prototype.watch = function(watchPath) {
   });
 
   walker.on('end', function() {
-    that.eventWatcherId = setInterval(that._watchFromQueue.bind(that), that.options.every);
+    that.eventWatcherId = setTimeout(that._watchFromQueue.bind(that), that.options.every);
 
     var mustExclude = function(filename) {
       return function(regex) {
@@ -135,12 +138,15 @@ Watch.prototype.watch = function(watchPath) {
     };
 
     that.watcher = fs.watch(watchPath, {recursive: that.options.recursive}, function(eventType, filename) {
+      that.eventWatcherId = clearTimeout(that.eventWatcherId);
       if (!that.options.excludes.map(mustExclude(path.join(watchPath, filename))).reduce((memo,item) => memo || item, false)) {
         that.events.push({
           type: eventType,
           filename: path.join(watchPath, filename),
           on: new Date().getTime(),
         });
+
+        that.eventWatcherId = setTimeout(that._watchFromQueue.bind(that), that.options.every);
       }
     });
 
@@ -151,13 +157,14 @@ Watch.prototype.watch = function(watchPath) {
 };
 
 Watch.prototype.close = function() {
-  if (this.eventWatcherId) {
-    clearInterval(this.eventWatcherId);
-  }
-
   if (this.watcher) {
     this.watcher.close();
   }
+
+  if (this.eventWatcherId) {
+    this.eventWatcherId = clearTimeout(this.eventWatcherId);
+  }
+
 };
 
 module.exports = Watch;
