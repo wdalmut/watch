@@ -138,14 +138,17 @@ Watch.prototype.watch = function(watchPath) {
     };
 
     that.watcher = fs.watch(watchPath, {recursive: that.options.recursive}, function(eventType, filename) {
-      that.eventWatcherId = clearTimeout(that.eventWatcherId);
       if (!that.options.excludes.map(mustExclude(path.join(watchPath, filename))).reduce((memo,item) => memo || item, false)) {
+        // stop check timeout (restart later)
+        that.eventWatcherId = clearTimeout(that.eventWatcherId);
+
         that.events.push({
           type: eventType,
           filename: path.join(watchPath, filename),
           on: new Date().getTime(),
         });
 
+        // start check timeout
         that.eventWatcherId = setTimeout(that._watchFromQueue.bind(that), that.options.every);
       }
     });
