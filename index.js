@@ -120,11 +120,11 @@ Watch.prototype.watch = function(watchPath) {
   var walker = walk.walk(watchPath, {followLinks: this.options.followLinks});
 
   walker.on('file', function(root, stat, next) {
-    that.filesystem = that.filesystem.concat([{
+    that.filesystem.push({
       id: stat.ino,
       fullpath: path.join(root, stat.name),
       stat: stat,
-    }]);
+    });
     next();
   });
 
