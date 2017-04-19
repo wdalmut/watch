@@ -1,6 +1,6 @@
 {
   "name": "inode-watch",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "watch filesystem and give a better file events information (like move operation)",
   "main": "index.js",
   "scripts": {

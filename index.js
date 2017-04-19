@@ -101,7 +101,7 @@ Watch.prototype._watchFromQueue = function() {
         that.filesystem.find(byInode(op.stat.ino)).fullpath = op.filename;
         break;
       case "delete":
-        that.filesystem.splice(that.filesystem.find(byInode(op.stat.ino), 1));
+        that.filesystem.splice(that.filesystem.find(byName(op.filename), 1));
         break;
       case "change":
         op.stat = fs.statSync(op.filename);
