@@ -44,13 +44,14 @@ Watch.prototype._watchFromQueue = function() {
     var file = that.filesystem.find(byName(event.filename));
     var fileStat = (file) ? file.stat: null;
     var fileExists = fs.existsSync(event.filename);
+
     if (!fileStat && fileExists) {
       fileStat = fs.statSync(event.filename);
       // devo cercarlo per ino se c'è è una move
       file = that.filesystem.find(byInode(fileStat.ino));
 
       if (file) {
-        // file nuovo
+        // file move
         operations[fileStat.ino] = {
           eventType: "move",
           filename: event.filename,
@@ -103,7 +104,13 @@ Watch.prototype._watchFromQueue = function() {
         that.filesystem.splice(that.filesystem.find(byInode(op.stat.ino), 1));
         break;
       case "change":
-        that.filesystem.find(byInode(op.stat.ino)).stat = op.stat;
+        op.stat = fs.statSync(op.filename);
+
+        // aggiorno il puntamento del file durante le change cambiano gli inodes
+        var file = that.filesystem.find(byName(op.filename));
+        file.stat = op.stat;
+        file.id = op.stat.ino;
+
         break;
     }
 
