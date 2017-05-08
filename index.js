@@ -99,18 +99,25 @@ Watch.prototype._watchFromQueue = function() {
         break;
       case "move":
         that.filesystem.find(byInode(op.stat.ino)).fullpath = op.filename;
+        // cambia tutte le folder dei file sotto questo
+        that.filesystem = that.filesystem.map((item) => {
+          if (item.fullpath.indexOf(op.original + path.sep) >= 0) { // look for the same folder
+            item.fullpath = item.fullpath.replace(op.original, op.filename); // path change
+          }
+          return item;
+        });
         break;
       case "delete":
         that.filesystem.splice(that.filesystem.find(byName(op.filename), 1));
+        that.filesystem = that.filesystem.filter((item) => {
+          if (item.fullpath.indexOf(op.filename + path.sep) >= 0) {
+            return false;
+          }
+          return true;
+        });
         break;
       case "change":
         op.stat = fs.statSync(op.filename);
-
-        // aggiorno il puntamento del file durante le change cambiano gli inodes
-        var file = that.filesystem.find(byName(op.filename));
-        file.stat = op.stat;
-        file.id = op.stat.ino;
-
         break;
     }
 
@@ -125,6 +132,15 @@ Watch.prototype.watch = function(watchPath) {
 
   var that = this;
   var walker = walk.walk(watchPath, {followLinks: this.options.followLinks});
+
+  walker.on('directory', function(root, stat, next) {
+    that.filesystem.push({
+      id: stat.ino,
+      fullpath: path.join(root, stat.name),
+      stat: stat,
+    });
+    next();
+  });
 
   walker.on('file', function(root, stat, next) {
     that.filesystem.push({
