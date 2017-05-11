@@ -23,24 +23,39 @@ var Watch = function(options) {
 
 util.inherits(Watch, EventEmitter);
 
+var byName = function(filename) {
+  return function(item) {
+    return item.fullpath == filename;
+  };
+};
+var byInode = function(ino) {
+  return function(item) {
+    return (item.id == ino);
+  };
+};
+
+var isSubFolder = function(path) {
+  return function(item) {
+    if (item.fullpath.indexOf(path) >= 0) {
+      return false;
+    }
+    return true;
+  };
+};
+
 Watch.prototype._watchFromQueue = function() {
-  this.eventWatcherId = null;
+  var that = this;
+
+  var events = this.events;
+  this.events = [];
+
+  this.eventWatcherId = clearTimeout(this.eventWatcherId);
 
   var operations = {};
 
-  var byName = function(filename) {
-    return function(item) {
-      return item.fullpath == filename;
-    };
-  };
-  var byInode = function(ino) {
-    return function(item) {
-      return (item.id == ino);
-    };
-  };
+  for (var index in events) {
+    var event = events[index];
 
-  var that = this;
-  this.events.forEach(function(event) {
     var file = that.filesystem.find(byName(event.filename));
     var fileStat = (file) ? file.stat: null;
     var fileExists = fs.existsSync(event.filename);
@@ -82,11 +97,19 @@ Watch.prototype._watchFromQueue = function() {
           stat: fileStat,
         };
       }
+    } else if (!fileStat && !fileExists) {
+      // non è presente ne su disco ne in memoria
+      operations[Math.random()+"-"+Math.random()] = {
+        eventType: "delete",
+        filename: event.filename,
+        stat: null,
+      };
     }
-  });
-  this.events = [];
+  }
 
-  Object.keys(operations).forEach(function(ino) {
+  that.filesystem.map((item) => console.log(item.id, item.fullpath));
+  console.log("-------------------------------------------------------------------------");
+  for (var ino in operations) {
     var op = operations[ino];
 
     switch (op.eventType) {
@@ -98,7 +121,9 @@ Watch.prototype._watchFromQueue = function() {
         });
         break;
       case "move":
+        // aggiorno il suo filename
         that.filesystem.find(byInode(op.stat.ino)).fullpath = op.filename;
+
         // cambia tutte le folder dei file sotto questo
         that.filesystem = that.filesystem.map((item) => {
           if (item.fullpath.indexOf(op.original + path.sep) >= 0) { // look for the same folder
@@ -108,23 +133,16 @@ Watch.prototype._watchFromQueue = function() {
         });
         break;
       case "delete":
-        that.filesystem.splice(that.filesystem.find(byName(op.filename), 1));
-        that.filesystem = that.filesystem.filter((item) => {
-          if (item.fullpath.indexOf(op.filename + path.sep) >= 0) {
-            return false;
-          }
-          return true;
-        });
+        that.filesystem = that.filesystem.filter((item) => (item.fullpath == op.filename) ? false : true);
+        that.filesystem = that.filesystem.filter(isSubFolder(op.filename + path.sep));
         break;
       case "change":
-        op.stat = fs.statSync(op.filename);
         break;
     }
 
     that.emit(op.eventType, op);
-  });
+  }
 
-  that.operations = {};
   that.eventWatcherId = setTimeout(that._watchFromQueue.bind(that), that.options.every);
 };
 

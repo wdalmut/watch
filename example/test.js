@@ -1,6 +1,6 @@
 var w = require('../');
 
-w({every: 500})
+w({every: 2500})
   .on("start", console.log)
   .on("create", (op) => console.log("create", op))
   .on("move", (op) => console.log("move", op))
