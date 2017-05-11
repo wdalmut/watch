@@ -107,8 +107,6 @@ Watch.prototype._watchFromQueue = function() {
     }
   }
 
-  that.filesystem.map((item) => console.log(item.id, item.fullpath));
-  console.log("-------------------------------------------------------------------------");
   for (var ino in operations) {
     var op = operations[ino];
 
