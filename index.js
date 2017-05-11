@@ -161,6 +161,11 @@ Watch.prototype.watch = function(watchPath) {
     };
 
     that.watcher = fs.watch(watchPath, {recursive: that.options.recursive}, function(eventType, filename) {
+      // filename non presente (null)
+      if (!filename) {
+        return;
+      }
+
       that.emit("fs.watch.raw", {eventType: eventType, filename: path.join(watchPath, filename)});
       if (!that.options.excludes.map(mustExclude(path.join(watchPath, filename))).reduce((memo,item) => memo || item, false)) {
         that.emit("fs.watch.valid", {eventType: eventType, filename: filename});
